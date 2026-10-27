@@ -5,7 +5,7 @@ const validSource = {
   LINE_CHANNEL_SECRET: "0123456789abcdef0123456789abcdef",
   LINE_CHANNEL_ACCESS_TOKEN: "a".repeat(64),
   DATABASE_URL: "postgresql://user:pass@localhost:5432/webchat",
-  ADMIN_PASSWORD_HASH: "scrypt$c2FsdHNhbHRzYWx0c2FsdA$aGFzaGhhc2hoYXNoaGFzaA",
+  ADMIN_PASSWORD_HASH: "scrypt:N=16384,r=8,p=5:c2FsdHNhbHRzYWx0c2FsdA:aGFzaGhhc2hoYXNoaGFzaA",
   SESSION_SECRET: "s".repeat(32),
 };
 
