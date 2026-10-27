@@ -12,6 +12,10 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  images: {
+    // LINE profile pictures.
+    remotePatterns: [{ protocol: "https", hostname: "*.line-scdn.net" }],
+  },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

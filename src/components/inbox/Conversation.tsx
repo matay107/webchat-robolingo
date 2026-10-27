@@ -1,0 +1,83 @@
+"use client";
+
+import { useRef, useState } from "react";
+import type { ContactDto, MessageDto } from "@/server/handlers/conversations";
+import { ApiError, inboxApi, UnauthorizedError } from "./api";
+import { Avatar } from "./Avatar";
+import { Composer } from "./Composer";
+import { MessageThread } from "./MessageThread";
+import { mergeMessages } from "./messages";
+import { usePolling } from "./usePolling";
+
+const MESSAGE_POLL_MS = 2000;
+
+interface ConversationProps {
+  contact: ContactDto;
+  onBack: () => void;
+  /** Called for failures the inbox handles globally (expired session, lost connection). */
+  onError: (error: unknown) => void;
+}
+
+/** One conversation: polls for new messages and sends replies. Mount with `key={userId}`. */
+export function Conversation({ contact, onBack, onError }: ConversationProps) {
+  const [messages, setMessages] = useState<MessageDto[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
+  /** Highest message id seen by polling; sent messages do not move it, so nothing in between is skipped. */
+  const cursor = useRef<number | undefined>(undefined);
+  /** Retrying the same text reuses its idempotency key, so a send that timed out is not delivered twice. */
+  const pendingSend = useRef<{ text: string; key: string } | null>(null);
+
+  usePolling(async (signal) => {
+    try {
+      const incoming = await inboxApi.listMessages(contact.userId, cursor.current, signal);
+      if (incoming.length > 0) cursor.current = incoming[incoming.length - 1].id;
+      setMessages((current) => mergeMessages(current, incoming));
+      setLoaded(true);
+    } catch (error) {
+      if (!signal.aborted) onError(error);
+    }
+  }, MESSAGE_POLL_MS);
+
+  async function send(text: string): Promise<boolean> {
+    if (pendingSend.current?.text !== text) pendingSend.current = { text, key: crypto.randomUUID() };
+    try {
+      const message = await inboxApi.sendMessage(contact.userId, text, pendingSend.current.key);
+      pendingSend.current = null;
+      setSendError(null);
+      setMessages((current) => mergeMessages(current, [message]));
+      return true;
+    } catch (error) {
+      if (error instanceof UnauthorizedError) onError(error);
+      else setSendError(error instanceof ApiError ? error.message : "Could not send. Check your connection and try again.");
+      return false;
+    }
+  }
+
+  return (
+    <>
+      <header className="flex items-center gap-3 border-b border-zinc-200 bg-white px-4 py-3">
+        <button type="button" onClick={onBack} className="-ml-1 rounded p-1 text-zinc-500 hover:bg-zinc-100 md:hidden" aria-label="Back to conversations">
+          ←
+        </button>
+        <Avatar name={contact.displayName} pictureUrl={contact.pictureUrl} size={36} />
+        <div className="min-w-0">
+          <h2 className="truncate font-semibold text-zinc-900">{contact.displayName}</h2>
+          {!contact.isFollowing && <p className="text-xs text-zinc-500">Unfollowed or blocked the OA</p>}
+        </div>
+      </header>
+
+      {loaded ? <MessageThread messages={messages} /> : <p className="flex-1 p-6 text-center text-sm text-zinc-500">Loading…</p>}
+
+      {sendError && (
+        <p role="alert" className="border-t border-red-100 bg-red-50 px-4 py-2 text-sm text-red-700">
+          {sendError}
+        </p>
+      )}
+      <Composer
+        onSend={send}
+        disabledReason={contact.isFollowing ? undefined : "This user unfollowed the OA, so replies cannot be delivered."}
+      />
+    </>
+  );
+}

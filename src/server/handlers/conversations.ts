@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server";
 import { z } from "zod";
+import { MAX_TEXT_LENGTH } from "@/lib/chat/limits";
 import { IdempotencyKeyConflictError, type ChatRepository } from "@/lib/chat/repository";
 import { ContactNotFoundError, type ChatService } from "@/lib/chat/service";
 import type { ChatMessage, Contact } from "@/lib/chat/types";
@@ -23,8 +24,6 @@ import {
 
 /** Caps outbound pushes, which consume the OA's monthly message quota (OWASP API6:2023). */
 export const SEND_RATE_LIMIT = { limit: 20, windowMs: 60 * 1000 };
-/** LINE's maximum text message length. */
-export const MAX_TEXT_LENGTH = 5000;
 
 const limitSchema = z.coerce.number().int().min(1).max(100).default(50);
 const listMessagesQuerySchema = z.object({ after: z.coerce.number().int().min(0).optional(), limit: limitSchema });
