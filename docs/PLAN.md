@@ -24,46 +24,46 @@ Route handler บางเฉียบ: สร้างจาก factory ที�
 ---
 
 ## Phase 0: Foundation
-- [ ] T0.1 Scaffold Next.js 16 + TS strict, `engines.node >=24`, pnpm
-- [ ] T0.2 Vitest + coverage, ESLint, script `typecheck`
-- [ ] T0.3 (TDD) `env.ts`: ตรวจ env ด้วย Zod, fail fast ถ้าขาดหรือรูปแบบผิด
-- [ ] T0.4 GitHub Actions CI: lint → typecheck → test
+- [x] T0.1 Scaffold Next.js 16 + TS strict, `engines.node >=24`, pnpm
+- [x] T0.2 Vitest + coverage, ESLint, script `typecheck`
+- [x] T0.3 (TDD) `env.ts`: ตรวจ env ด้วย Zod, fail fast ถ้าขาดหรือรูปแบบผิด
+- [x] T0.4 GitHub Actions CI: lint → typecheck → test
 
 ## Phase 1: LINE integration core
-- [ ] T1.1 (TDD) `verifySignature(rawBody, signature, secret)`: HMAC-SHA256 + timing-safe compare
-- [ ] T1.2 (TDD) Webhook payload schema: รับ `message` (text/sticker/image/อื่นๆ), `follow`, `unfollow` และข้าม event ที่ไม่รู้จักอย่างปลอดภัย
-- [ ] T1.3 `LineGateway` interface + implementation (`getProfile`, `pushText`)
+- [x] T1.1 (TDD) `verifySignature(rawBody, signature, secret)`: HMAC-SHA256 + timing-safe compare
+- [x] T1.2 (TDD) Webhook payload schema: รับ `message` (text/sticker/image/อื่นๆ), `follow`, `unfollow` และข้าม event ที่ไม่รู้จักอย่างปลอดภัย
+- [x] T1.3 `LineGateway` interface + implementation (`getProfile`, `pushText`)
 
 ## Phase 2: Persistence
-- [ ] T2.1 Drizzle schema + migration: `contacts`, `messages` (unique `line_message_id`), `rate_limits`
-- [ ] T2.2 (TDD) `ChatRepository`: upsert contact, บันทึกข้อความแบบ idempotent, list contacts เรียงตามข้อความล่าสุด, list messages ด้วย cursor + limit
-- [ ] T2.3 (TDD) `RateLimiter` (fixed window, เก็บใน DB เพราะ serverless)
+- [x] T2.1 Drizzle schema + migration: `contacts`, `messages` (unique `line_message_id`), `rate_limits`
+- [x] T2.2 (TDD) `ChatRepository`: upsert contact, บันทึกข้อความแบบ idempotent, list contacts เรียงตามข้อความล่าสุด, list messages ด้วย cursor + limit
+- [x] T2.3 (TDD) `RateLimiter` (fixed window, เก็บใน DB เพราะ serverless)
 
 ## Phase 3: Domain services
-- [ ] T3.1 (TDD) `ingestWebhookEvents`: บันทึกข้อความเข้า, ดึงโปรไฟล์เฉพาะตอนไม่มีหรือเก่ากว่า 24 ชม., ดึงโปรไฟล์ไม่ได้ต้องไม่ทำให้ทั้ง batch ล้ม, event ซ้ำไม่บันทึกซ้ำ
-- [ ] T3.2 (TDD) `sendReply`: validate ข้อความ (1–5000 ตัวอักษร), contact ต้องมีอยู่, push สำเร็จแล้วค่อยบันทึก, push ล้มเหลวคืน error ที่ไม่รั่วรายละเอียดภายใน
+- [x] T3.1 (TDD) `ingestWebhookEvents`: บันทึกข้อความเข้า, ดึงโปรไฟล์เฉพาะตอนไม่มีหรือเก่ากว่า 24 ชม., ดึงโปรไฟล์ไม่ได้ต้องไม่ทำให้ทั้ง batch ล้ม, event ซ้ำไม่บันทึกซ้ำ
+- [x] T3.2 (TDD) `sendReply`: validate ข้อความ (1–5000 ตัวอักษร), contact ต้องมีอยู่, push สำเร็จแล้วค่อยบันทึก, push ล้มเหลวคืน error ที่ไม่รั่วรายละเอียดภายใน
 
 ## Phase 4: Security + API
-- [ ] T4.1 (TDD) Password: scrypt hash/verify + สคริปต์ `pnpm hash-password`
-- [ ] T4.2 (TDD) Session: sign/verify JWT (HS256, หมดอายุ 8 ชม.)
-- [ ] T4.3 (TDD) Route handlers (ผ่าน factory):
+- [x] T4.1 (TDD) Password: scrypt hash/verify + สคริปต์ `pnpm hash-password`
+- [x] T4.2 (TDD) Session: sign/verify JWT (HS256, หมดอายุ 8 ชม.)
+- [x] T4.3 (TDD) Route handlers (ผ่าน factory):
   - `POST /api/line/webhook`: จำกัดขนาด body, ตรวจ signature ก่อน parse
   - `POST /api/auth/login`: มี rate limit
   - `POST /api/auth/logout`
   - `GET /api/contacts`
   - `GET /api/contacts/[userId]/messages?after=&limit=`
   - `POST /api/contacts/[userId]/messages`: มี rate limit
-- [ ] T4.4 (TDD) `proxy.ts`: บังคับ session สำหรับหน้าเว็บและ `/api/*` (ยกเว้น webhook/login), ตรวจ Origin สำหรับ state-changing request (CSRF), CSP แบบ nonce + security headers
+- [x] T4.4 (TDD) `proxy.ts`: บังคับ session สำหรับหน้าเว็บและ `/api/*` (ยกเว้น webhook/login), ตรวจ Origin สำหรับ state-changing request (CSRF), CSP แบบ nonce + security headers
 
 ## Phase 5: UI
-- [ ] T5.1 หน้า Login
-- [ ] T5.2 (TDD component) Contact list (รูป, ชื่อ, ข้อความล่าสุด, เวลา) + เลือก user
-- [ ] T5.3 (TDD component) Message thread + composer (Enter ส่ง, Shift+Enter ขึ้นบรรทัดใหม่, ปิดปุ่มระหว่างส่ง)
-- [ ] T5.4 Polling hook (contacts ทุก 3 วิ, messages ทุก 2 วิ ด้วย `after`)
+- [x] T5.1 หน้า Login
+- [x] T5.2 (TDD component) Contact list (รูป, ชื่อ, ข้อความล่าสุด, เวลา) + เลือก user
+- [x] T5.3 (TDD component) Message thread + composer (Enter ส่ง, Shift+Enter ขึ้นบรรทัดใหม่, ปิดปุ่มระหว่างส่ง)
+- [x] T5.4 Polling hook (contacts ทุก 3 วิ, messages ทุก 2 วิ ด้วย `after`)
 
 ## Phase 6: Hardening + delivery
-- [ ] T6.1 `docs/SECURITY.md`: threat model (PTES), mapping กับ ASVS / API Top 10 2023
-- [ ] T6.2 README: architecture, setup, env, deploy, วิธีทดสอบ
+- [x] T6.1 `docs/SECURITY.md`: threat model (PTES), mapping กับ ASVS / API Top 10 2023
+- [x] T6.2 README: architecture, setup, env, deploy, วิธีทดสอบ
 - [ ] T6.3 Deploy: GitHub public repo → Vercel → ตั้ง webhook → ทดสอบ end-to-end (ต้องใช้บัญชีของผู้ใช้)
 
 ## Definition of Done (ทุกเฟส)
