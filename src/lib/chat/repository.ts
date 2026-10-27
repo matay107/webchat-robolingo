@@ -7,7 +7,8 @@ export interface ContactProfileInput {
   userId: string;
   displayName: string;
   pictureUrl: string | null;
-  syncedAt: Date;
+  /** `null` when the profile could not be fetched, so the next event retries. */
+  syncedAt: Date | null;
 }
 
 export interface InboundMessageInput {
