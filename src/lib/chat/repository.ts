@@ -16,6 +16,7 @@ export interface InboundMessageInput {
   lineMessageId: string;
   messageType: string;
   text: string | null;
+  stickerId: string | null;
   sentAt: Date;
 }
 
@@ -73,6 +74,7 @@ function toMessage(row: MessageRow): ChatMessage {
     direction: row.direction,
     messageType: row.messageType,
     text: row.text,
+    stickerId: row.stickerId,
     sentAt: row.sentAt,
   };
 }

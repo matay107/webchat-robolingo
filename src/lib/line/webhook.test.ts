@@ -21,16 +21,30 @@ describe("parseWebhookBody", () => {
     const event = { ...base, type: "message", replyToken: "r", message: { id: "4680", type: "text", text: "สวัสดี" } };
 
     expect(parseWebhookBody(body(event))).toEqual([
-      { kind: "message", userId, messageId: "4680", sentAt: new Date(base.timestamp), messageType: "text", text: "สวัสดี" },
+      { kind: "message", userId, messageId: "4680", sentAt: new Date(base.timestamp), messageType: "text", text: "สวัสดี", stickerId: null },
     ]);
   });
 
-  it("keeps non-text messages with their type and no text", () => {
-    const event = { ...base, type: "message", replyToken: "r", message: { id: "4681", type: "sticker", packageId: "1", stickerId: "2" } };
+  it("keeps a sticker message with its sticker id and no text", () => {
+    const event = { ...base, type: "message", replyToken: "r", message: { id: "4681", type: "sticker", packageId: "1", stickerId: "52002734" } };
 
     expect(parseWebhookBody(body(event))).toEqual([
-      { kind: "message", userId, messageId: "4681", sentAt: new Date(base.timestamp), messageType: "sticker", text: null },
+      { kind: "message", userId, messageId: "4681", sentAt: new Date(base.timestamp), messageType: "sticker", text: null, stickerId: "52002734" },
     ]);
+  });
+
+  it("keeps other non-text messages with their type only", () => {
+    const event = { ...base, type: "message", replyToken: "r", message: { id: "4682", type: "image" } };
+
+    expect(parseWebhookBody(body(event))).toEqual([
+      { kind: "message", userId, messageId: "4682", sentAt: new Date(base.timestamp), messageType: "image", text: null, stickerId: null },
+    ]);
+  });
+
+  it("keeps a sticker message but drops a sticker id that is not numeric, since it ends up in an image URL", () => {
+    const event = { ...base, type: "message", replyToken: "r", message: { id: "4683", type: "sticker", packageId: "1", stickerId: "../x" } };
+
+    expect(parseWebhookBody(body(event))).toMatchObject([{ messageType: "sticker", stickerId: null }]);
   });
 
   it.each(["follow", "unfollow"] as const)("normalizes a %s event", (type) => {

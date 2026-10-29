@@ -25,7 +25,7 @@ beforeEach(async () => {
   cookie = await sessionCookie();
 
   await repo.saveContactProfile({ userId: alice, displayName: "Alice", pictureUrl: "https://p/a.png", syncedAt: at });
-  await repo.recordInbound({ userId: alice, lineMessageId: "1", messageType: "text", text: "<b>hi</b>", sentAt: at });
+  await repo.recordInbound({ userId: alice, lineMessageId: "1", messageType: "text", text: "<b>hi</b>", stickerId: null, sentAt: at });
 });
 
 const get = (path: string, withSession = true) => makeRequest(path, { cookie: withSession ? cookie : undefined });
@@ -83,7 +83,7 @@ describe("GET /api/contacts/:userId/messages", () => {
     const response = await handlers.listMessages(get(`/api/contacts/${alice}/messages`), alice);
 
     await expect(response.json()).resolves.toEqual({
-      messages: [{ id: expect.any(Number), direction: "inbound", type: "text", text: "<b>hi</b>", sentAt: at.toISOString() }],
+      messages: [{ id: expect.any(Number), direction: "inbound", type: "text", text: "<b>hi</b>", stickerId: null, sentAt: at.toISOString() }],
     });
   });
 

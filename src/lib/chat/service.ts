@@ -79,6 +79,7 @@ export function createChatService({ repo, line, now }: ChatServiceDeps): ChatSer
           lineMessageId: event.messageId,
           messageType: event.messageType,
           text: event.text,
+          stickerId: event.stickerId,
           sentAt: event.sentAt,
         });
         return;

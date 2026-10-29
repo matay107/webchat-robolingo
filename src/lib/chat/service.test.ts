@@ -29,6 +29,7 @@ const textEvent = (messageId: string, text: string, userId = alice): InboundEven
   sentAt: new Date(now.getTime() - 1000),
   messageType: "text",
   text,
+  stickerId: null,
 });
 
 describe("ingestWebhookEvents", () => {
@@ -41,6 +42,13 @@ describe("ingestWebhookEvents", () => {
       lastMessage: { text: "hi" },
     });
     await expect(repo.listMessages(alice, { limit: 10 })).resolves.toMatchObject([{ direction: "inbound", text: "hi" }]);
+  });
+
+  it("stores the sticker id of a sticker message", async () => {
+    const sticker: InboundEvent = { kind: "message", userId: alice, messageId: "m1", sentAt: now, messageType: "sticker", text: null, stickerId: "52002734" };
+    await service.ingestWebhookEvents([sticker]);
+
+    await expect(repo.listMessages(alice, { limit: 10 })).resolves.toMatchObject([{ messageType: "sticker", stickerId: "52002734" }]);
   });
 
   it("fetches the profile once per TTL, not once per message", async () => {

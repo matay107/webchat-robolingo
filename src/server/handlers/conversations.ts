@@ -52,6 +52,7 @@ function toMessageDto(message: ChatMessage) {
     direction: message.direction,
     type: message.messageType,
     text: message.text,
+    stickerId: message.stickerId,
     sentAt: message.sentAt.toISOString(),
   };
 }

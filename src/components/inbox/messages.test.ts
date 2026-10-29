@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type { MessageDto } from "@/server/handlers/conversations";
-import { describeMessage, mergeMessages } from "./messages";
+import { describeMessage, mergeMessages, stickerImageUrl } from "./messages";
 
 const msg = (id: number, text = `m${id}`): MessageDto => ({
   id,
   direction: "inbound",
   type: "text",
   text,
+  stickerId: null,
   sentAt: new Date(Date.UTC(2026, 0, 1, 0, id)).toISOString(),
 });
 
@@ -25,6 +26,12 @@ describe("describeMessage", () => {
     ["somethingNew", "Unsupported message (somethingNew)"],
   ])("labels a %s message", (type, label) => {
     expect(describeMessage(type, null)).toBe(label);
+  });
+});
+
+describe("stickerImageUrl", () => {
+  it("points at LINE's sticker CDN", () => {
+    expect(stickerImageUrl("52002734")).toBe("https://stickershop.line-scdn.net/stickershop/v1/sticker/52002734/android/sticker.png");
   });
 });
 

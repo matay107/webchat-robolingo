@@ -15,6 +15,11 @@ export function describeMessage(type: string, text: string | null): string {
   return NON_TEXT_LABELS[type] ?? `Unsupported message (${type})`;
 }
 
+/** LINE's public sticker image. Not an official API, so callers must handle a failed load. */
+export function stickerImageUrl(stickerId: string): string {
+  return `https://stickershop.line-scdn.net/stickershop/v1/sticker/${stickerId}/android/sticker.png`;
+}
+
 /**
  * Merges polled or just-sent messages into the thread, ordered by id and without duplicates.
  * Returns `current` itself when nothing is new so React can bail out of re-rendering.

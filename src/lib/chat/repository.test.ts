@@ -16,7 +16,7 @@ const addContact = (userId: string, displayName = "Alice") =>
   repo.saveContactProfile({ userId, displayName, pictureUrl: null, syncedAt: at(0) });
 
 const inbound = (userId: string, lineMessageId: string, text: string, sentAt: Date) =>
-  repo.recordInbound({ userId, lineMessageId, messageType: "text", text, sentAt });
+  repo.recordInbound({ userId, lineMessageId, messageType: "text", text, stickerId: null, sentAt });
 
 describe("contacts", () => {
   it("returns null for an unknown user", async () => {
@@ -66,8 +66,14 @@ describe("recordInbound", () => {
   it("stores the message and makes it the contact's latest", async () => {
     const message = await inbound(alice, "100", "hi", at(1));
 
-    expect(message).toEqual({ id: expect.any(Number), userId: alice, direction: "inbound", messageType: "text", text: "hi", sentAt: at(1) });
+    expect(message).toEqual({ id: expect.any(Number), userId: alice, direction: "inbound", messageType: "text", text: "hi", stickerId: null, sentAt: at(1) });
     await expect(repo.findContact(alice)).resolves.toMatchObject({ lastMessage: { type: "text", text: "hi", sentAt: at(1) } });
+  });
+
+  it("stores the sticker id of a sticker message", async () => {
+    await repo.recordInbound({ userId: alice, lineMessageId: "200", messageType: "sticker", text: null, stickerId: "52002734", sentAt: at(1) });
+
+    await expect(repo.listMessages(alice, { limit: 10 })).resolves.toMatchObject([{ messageType: "sticker", stickerId: "52002734" }]);
   });
 
   it("ignores a redelivered LINE message id", async () => {
@@ -92,7 +98,7 @@ describe("recordOutbound", () => {
   it("stores the reply and makes it the contact's latest", async () => {
     const message = await repo.recordOutbound({ userId: alice, text: "hello", idempotencyKey: key, sentAt: at(2) });
 
-    expect(message).toMatchObject({ userId: alice, direction: "outbound", messageType: "text", text: "hello" });
+    expect(message).toMatchObject({ userId: alice, direction: "outbound", messageType: "text", text: "hello", stickerId: null });
     await expect(repo.findContact(alice)).resolves.toMatchObject({ lastMessage: { text: "hello" } });
   });
 

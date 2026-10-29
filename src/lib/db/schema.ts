@@ -24,6 +24,8 @@ export const messages = pgTable("messages", {
   direction: text("direction", { enum: ["inbound", "outbound"] }).notNull(),
   messageType: text("message_type").notNull(),
   text: text("text"),
+  /** LINE sticker id, for `sticker` messages. */
+  stickerId: text("sticker_id"),
   /** LINE's message id; unique so webhook redeliveries are stored once. */
   lineMessageId: text("line_message_id").unique(),
   /** Client-generated key; unique so a retried send is stored once. */

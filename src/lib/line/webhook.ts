@@ -14,6 +14,8 @@ export type InboundEvent =
       messageType: string;
       /** Present only for `text` messages. */
       text: string | null;
+      /** Present only for `sticker` messages. */
+      stickerId: string | null;
     }
   | { kind: "follow" | "unfollow"; userId: string; sentAt: Date };
 
@@ -37,6 +39,8 @@ const eventSchema = z.discriminatedUnion("type", [
       id: z.string().min(1).max(64),
       type: z.string().min(1).max(32),
       text: z.string().optional(),
+      // Numeric only because it is placed in an image URL; anything else is dropped, not the message.
+      stickerId: z.string().regex(/^\d{1,20}$/).optional().catch(undefined),
     }),
   }),
   z.object({ ...eventBase, type: z.literal("follow") }),
@@ -60,7 +64,16 @@ export function parseWebhookBody(payload: unknown): InboundEvent[] {
     const common = { userId: event.source.userId, sentAt: new Date(event.timestamp) };
     if (event.type !== "message") return [{ kind: event.type, ...common }];
 
-    const { id, type, text } = event.message;
-    return [{ kind: "message", ...common, messageId: id, messageType: type, text: type === "text" ? (text ?? "") : null }];
+    const { id, type, text, stickerId } = event.message;
+    return [
+      {
+        kind: "message",
+        ...common,
+        messageId: id,
+        messageType: type,
+        text: type === "text" ? (text ?? "") : null,
+        stickerId: type === "sticker" ? (stickerId ?? null) : null,
+      },
+    ];
   });
 }

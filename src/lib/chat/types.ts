@@ -8,6 +8,8 @@ export interface ChatMessage {
   messageType: string;
   /** Present only for text messages. */
   text: string | null;
+  /** Present only for sticker messages. */
+  stickerId: string | null;
   sentAt: Date;
 }
 
