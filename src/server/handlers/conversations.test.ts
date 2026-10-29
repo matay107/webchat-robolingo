@@ -12,16 +12,26 @@ const at = new Date("2026-01-01T00:00:00Z");
 const uuid = () => crypto.randomUUID();
 
 let repo: ChatRepository;
-let line: { getProfile: ReturnType<typeof vi.fn>; pushText: ReturnType<typeof vi.fn> };
+let line: { getProfile: ReturnType<typeof vi.fn>; pushText: ReturnType<typeof vi.fn>; getImage: ReturnType<typeof vi.fn> };
 let handlers: ReturnType<typeof createConversationHandlers>;
 let cookie: string;
 
 beforeEach(async () => {
   const db = await createTestDatabase();
   repo = createChatRepository(db);
-  line = { getProfile: vi.fn(), pushText: vi.fn().mockResolvedValue(undefined) };
+  line = {
+    getProfile: vi.fn(),
+    pushText: vi.fn().mockResolvedValue(undefined),
+    getImage: vi.fn().mockResolvedValue({ data: new Uint8Array([1, 2]), contentType: "image/jpeg" }),
+  };
   const service = createChatService({ repo, line: line as LineGateway, now: () => new Date() });
-  handlers = createConversationHandlers({ repo, service, limiter: createRateLimiter(db), sessionSecret: "s".repeat(32) });
+  handlers = createConversationHandlers({
+    repo,
+    service,
+    line: line as LineGateway,
+    limiter: createRateLimiter(db),
+    sessionSecret: "s".repeat(32),
+  });
   cookie = await sessionCookie();
 
   await repo.saveContactProfile({ userId: alice, displayName: "Alice", pictureUrl: "https://p/a.png", syncedAt: at });
@@ -84,7 +94,9 @@ describe("GET /api/contacts/:userId/messages", () => {
     const response = await handlers.listMessages(get(`/api/contacts/${alice}/messages`), alice);
 
     await expect(response.json()).resolves.toEqual({
-      messages: [{ id: expect.any(Number), direction: "inbound", type: "text", text: "<b>hi</b>", stickerId: null, sentAt: at.toISOString() }],
+      messages: [
+        { id: expect.any(Number), direction: "inbound", type: "text", text: "<b>hi</b>", stickerId: null, imageUrl: null, sentAt: at.toISOString() },
+      ],
     });
   });
 
@@ -110,6 +122,70 @@ describe("GET /api/contacts/:userId/messages", () => {
     ["both after and before", alice, "?after=1&before=5"],
   ])("rejects %s with 400", async (_, userId, query) => {
     expect((await handlers.listMessages(get(`/api/contacts/${userId}/messages${query}`), userId)).status).toBe(400);
+  });
+});
+
+describe("GET /api/contacts/:userId/messages/:id/image", () => {
+  const bob = `U${"b".repeat(32)}`;
+  let imageId: number;
+
+  beforeEach(async () => {
+    const image = await repo.recordInbound({ userId: alice, lineMessageId: "900", messageType: "image", text: null, stickerId: null, sentAt: at });
+    imageId = image!.id;
+  });
+
+  const getImage = (userId: string, id: string | number, query = "", withSession = true) =>
+    handlers.getImage(get(`/api/contacts/${userId}/messages/${id}/image${query}`, withSession), userId, String(id));
+
+  it("links image messages to their image in the message list", async () => {
+    const { messages } = await (await handlers.listMessages(get(`/api/contacts/${alice}/messages`), alice)).json();
+
+    expect(messages.at(-1).imageUrl).toBe(`/api/contacts/${alice}/messages/${imageId}/image`);
+  });
+
+  it("streams the preview from LINE with its content type, never exposing the access token", async () => {
+    const response = await getImage(alice, imageId);
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toBe("image/jpeg");
+    expect(new Uint8Array(await response.arrayBuffer())).toEqual(new Uint8Array([1, 2]));
+    expect(line.getImage).toHaveBeenCalledWith("900", "preview");
+  });
+
+  it("serves the original with ?size=full", async () => {
+    await getImage(alice, imageId, "?size=full");
+
+    expect(line.getImage).toHaveBeenCalledWith("900", "full");
+  });
+
+  it("returns 404 for a message of another user (BOLA) without calling LINE", async () => {
+    await repo.saveContactProfile({ userId: bob, displayName: "Bob", pictureUrl: null, syncedAt: at });
+
+    expect((await getImage(bob, imageId)).status).toBe(404);
+    expect(line.getImage).not.toHaveBeenCalled();
+  });
+
+  it("returns 404 when LINE no longer has the image", async () => {
+    line.getImage.mockResolvedValue(null);
+
+    expect((await getImage(alice, imageId)).status).toBe(404);
+  });
+
+  it("returns 502 when LINE fails", async () => {
+    line.getImage.mockRejectedValue(new LineApiError("getMessageContent", 500));
+
+    expect((await getImage(alice, imageId)).status).toBe(502);
+  });
+
+  it("rejects a request without a session with 401", async () => {
+    expect((await getImage(alice, imageId, "", false)).status).toBe(401);
+  });
+
+  it.each([
+    ["a non-numeric id", "abc", ""],
+    ["an unknown size", "1", "?size=huge"],
+  ])("rejects %s with 400", async (_, id, query) => {
+    expect((await getImage(alice, id, query)).status).toBe(400);
   });
 });
 

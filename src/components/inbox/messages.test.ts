@@ -9,6 +9,7 @@ const msg = (id: number, text = `m${id}`): MessageDto => ({
   type: "text",
   text,
   stickerId: null,
+  imageUrl: null,
   sentAt: new Date(Date.UTC(2026, 0, 1, 0, id)).toISOString(),
 });
 

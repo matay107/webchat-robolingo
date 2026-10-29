@@ -35,6 +35,8 @@ export interface ChatRepository {
   setFollowing(userId: string, isFollowing: boolean): Promise<void>;
   /** Marks messages up to `upToId` as read; the marker never moves backwards. */
   markRead(userId: string, upToId: number): Promise<void>;
+  /** LINE's id for this user's message of `messageType`; `null` if there is none (including another user's message). */
+  findLineMessageId(userId: string, messageId: number, messageType: string): Promise<string | null>;
   /** Resolves `null` when this LINE message was already stored (webhook redelivery). */
   recordInbound(input: InboundMessageInput): Promise<ChatMessage | null>;
   /** Idempotent per `idempotencyKey`: a retry resolves to the originally stored message. */
@@ -136,6 +138,15 @@ export function createChatRepository(db: Database): ChatRepository {
         .update(contacts)
         .set({ lastReadMessageId: sql`greatest(${contacts.lastReadMessageId}, ${upToId})` })
         .where(eq(contacts.userId, userId));
+    },
+
+    async findLineMessageId(userId, messageId, messageType) {
+      const [row] = await db
+        .select({ lineMessageId: messages.lineMessageId })
+        .from(messages)
+        .where(and(eq(messages.id, messageId), eq(messages.userId, userId), eq(messages.messageType, messageType)))
+        .limit(1);
+      return row?.lineMessageId ?? null;
     },
 
     async recordInbound(input) {

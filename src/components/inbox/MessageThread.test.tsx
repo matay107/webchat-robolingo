@@ -10,6 +10,7 @@ const message = (id: number, overrides: Partial<MessageDto> = {}): MessageDto =>
   type: "text",
   text: `message ${id}`,
   stickerId: null,
+  imageUrl: null,
   sentAt: "2026-01-01T10:00:00.000Z",
   ...overrides,
 });
@@ -47,6 +48,22 @@ describe("MessageThread", () => {
 
     expect(screen.queryByRole("img")).not.toBeInTheDocument();
     expect(screen.getByText("Sticker")).toBeInTheDocument();
+  });
+
+  it("shows a photo as its preview, linking to the full size", () => {
+    render(<MessageThread messages={[message(1, { type: "image", text: null, imageUrl: "/api/img/1" })]} />);
+
+    expect(screen.getByRole("img", { name: "Photo" }).getAttribute("src")).toMatch(/\/api\/img\/1$/);
+    expect(screen.getByRole("link", { name: "Photo" })).toHaveAttribute("href", "/api/img/1?size=full");
+  });
+
+  it("falls back to the photo label when the image cannot be loaded", () => {
+    render(<MessageThread messages={[message(1, { type: "image", text: null, imageUrl: "/api/img/1" })]} />);
+
+    fireEvent.error(screen.getByRole("img", { name: "Photo" }));
+
+    expect(screen.queryByRole("img")).not.toBeInTheDocument();
+    expect(screen.getByText("Photo")).toBeInTheDocument();
   });
 
   it("offers to load earlier messages only when there are more", () => {

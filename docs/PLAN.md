@@ -75,7 +75,7 @@ Route handler บางเฉียบ: สร้างจาก factory ที�
   - เพิ่มคอลัมน์ `contacts.last_read_message_id` และส่ง `unreadCount` (นับเฉพาะข้อความขาเข้า) ไปกับรายชื่อ
   - `POST /api/contacts/[userId]/read { upToId }`: ตรวจ Origin + session และค่าห้ามถอยหลัง
   - UI: ตัวเลขบนรายชื่อ, title ของแท็บเป็น `(N) ...` และ mark read เมื่อเปิดดูแชท
-- [ ] T7.3 (TDD) แสดงรูปที่ผู้ใช้ส่งมา:
+- [x] T7.3 (TDD) แสดงรูปที่ผู้ใช้ส่งมา:
   - `GET /api/contacts/[userId]/messages/[id]/image[?size=full]`: ดึงผ่าน LINE Content API ฝั่ง server เพื่อไม่ให้ token ไปถึง browser
   - ตรวจว่าข้อความเป็นของ user นั้นจริง (กัน BOLA, API1:2023) และยอมรับเฉพาะ raster image content-type
   - UI: แสดง preview ในแชท กดแล้วเปิดรูปเต็มในแท็บใหม่ ถ้าโหลดไม่ได้ (เช่นไฟล์หมดอายุ) ให้กลับไปแสดงข้อความ "Photo"

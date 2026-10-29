@@ -21,6 +21,16 @@ function Sticker({ stickerId, onFail }: { stickerId: string; onFail: () => void 
   );
 }
 
+/** Photo preview; opens the original in a new tab. */
+function Photo({ url, onFail }: { url: string; onFail: () => void }) {
+  return (
+    <a href={`${url}?size=full`} target="_blank" rel="noopener noreferrer" className="block overflow-hidden rounded-2xl shadow-sm">
+      {/* Unoptimized: the image route needs the session cookie, which the optimizer does not forward. */}
+      <Image src={url} alt="Photo" width={240} height={240} unoptimized onError={onFail} className="h-auto max-h-60 w-auto max-w-60 object-cover" />
+    </a>
+  );
+}
+
 interface MessageThreadProps {
   messages: MessageDto[];
   /** Set while older history exists; shows a "load earlier" button at the top. */
@@ -34,7 +44,8 @@ export function MessageThread({ messages, onLoadOlder, loadingOlder = false }: M
   const firstId = messages[0]?.id;
   const lastId = messages.at(-1)?.id;
   const previous = useRef<{ firstId?: number; scrollHeight: number }>({ scrollHeight: 0 });
-  const [failedStickers, setFailedStickers] = useState<ReadonlySet<number>>(() => new Set());
+  /** Messages whose sticker or photo failed to load; they fall back to their text label. */
+  const [failedMedia, setFailedMedia] = useState<ReadonlySet<number>>(() => new Set());
 
   // Prepending older history must not move what the admin is reading: shift by the added height.
   useLayoutEffect(() => {
@@ -73,15 +84,17 @@ export function MessageThread({ messages, onLoadOlder, loadingOlder = false }: M
           {messages.map((message) => {
             const outbound = message.direction === "outbound";
             const isText = message.type === "text";
-            const stickerId = failedStickers.has(message.id) ? null : message.stickerId;
+            const failed = failedMedia.has(message.id);
+            const stickerId = failed ? null : message.stickerId;
+            const imageUrl = failed ? null : message.imageUrl;
+            const markFailed = () => setFailedMedia((current) => new Set(current).add(message.id));
             return (
               <li key={message.id} data-direction={message.direction} className={`flex ${outbound ? "justify-end" : "justify-start"}`}>
                 <div className={`flex max-w-[75%] flex-col ${outbound ? "items-end" : "items-start"}`}>
                   {stickerId ? (
-                    <Sticker
-                      stickerId={stickerId}
-                      onFail={() => setFailedStickers((failed) => new Set(failed).add(message.id))}
-                    />
+                    <Sticker stickerId={stickerId} onFail={markFailed} />
+                  ) : imageUrl ? (
+                    <Photo url={imageUrl} onFail={markFailed} />
                   ) : (
                     <p
                       className={`whitespace-pre-wrap break-words px-4 py-2 text-[15px] leading-snug ${

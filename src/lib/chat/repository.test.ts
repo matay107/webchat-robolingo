@@ -92,6 +92,27 @@ describe("recordInbound", () => {
   });
 });
 
+describe("findLineMessageId", () => {
+  beforeEach(async () => {
+    await addContact(alice);
+    await addContact(bob, "Bob");
+  });
+
+  it("returns LINE's id for a message of that user and type", async () => {
+    const image = await repo.recordInbound({ userId: alice, lineMessageId: "900", messageType: "image", text: null, stickerId: null, sentAt: at(1) });
+
+    await expect(repo.findLineMessageId(alice, image!.id, "image")).resolves.toBe("900");
+  });
+
+  it("returns null for another user's message (BOLA) or another type", async () => {
+    const image = await repo.recordInbound({ userId: alice, lineMessageId: "900", messageType: "image", text: null, stickerId: null, sentAt: at(1) });
+    const text = await inbound(alice, "901", "hi", at(2));
+
+    await expect(repo.findLineMessageId(bob, image!.id, "image")).resolves.toBeNull();
+    await expect(repo.findLineMessageId(alice, text!.id, "image")).resolves.toBeNull();
+  });
+});
+
 describe("unread messages", () => {
   beforeEach(() => addContact(alice));
   const key = "11111111-1111-4111-8111-111111111111";

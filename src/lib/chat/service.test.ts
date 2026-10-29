@@ -10,7 +10,11 @@ const now = new Date("2026-01-01T12:00:00Z");
 const key = "11111111-1111-4111-8111-111111111111";
 
 let repo: ChatRepository;
-let line: { getProfile: ReturnType<typeof vi.fn<LineGateway["getProfile"]>>; pushText: ReturnType<typeof vi.fn<LineGateway["pushText"]>> };
+let line: {
+  getProfile: ReturnType<typeof vi.fn<LineGateway["getProfile"]>>;
+  pushText: ReturnType<typeof vi.fn<LineGateway["pushText"]>>;
+  getImage: ReturnType<typeof vi.fn<LineGateway["getImage"]>>;
+};
 let service: ChatService;
 
 beforeEach(async () => {
@@ -18,6 +22,7 @@ beforeEach(async () => {
   line = {
     getProfile: vi.fn<LineGateway["getProfile"]>().mockResolvedValue({ displayName: "Alice", pictureUrl: "https://p/a.png" }),
     pushText: vi.fn<LineGateway["pushText"]>().mockResolvedValue(undefined),
+    getImage: vi.fn<LineGateway["getImage"]>(),
   };
   service = createChatService({ repo, line, now: () => now });
 });

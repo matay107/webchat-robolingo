@@ -18,16 +18,13 @@ function build() {
   const db = createDatabase(env.databaseUrl);
   const repo = createChatRepository(db);
   const limiter = createRateLimiter(db);
-  const service = createChatService({
-    repo,
-    line: createDefaultLineGateway(env.lineChannelAccessToken),
-    now: () => new Date(),
-  });
+  const line = createDefaultLineGateway(env.lineChannelAccessToken);
+  const service = createChatService({ repo, line, now: () => new Date() });
 
   return {
     webhook: createWebhookHandler({ channelSecret: env.lineChannelSecret, service }),
     auth: createAuthHandlers({ adminPasswordHash: env.adminPasswordHash, sessionSecret: env.sessionSecret, limiter }),
-    conversations: createConversationHandlers({ repo, service, limiter, sessionSecret: env.sessionSecret }),
+    conversations: createConversationHandlers({ repo, service, line, limiter, sessionSecret: env.sessionSecret }),
   };
 }
 
