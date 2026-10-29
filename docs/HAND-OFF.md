@@ -12,7 +12,7 @@
 |---|---|
 | Webchat (production) | https://webchat-robolingo-sable.vercel.app |
 | Repository | https://github.com/matay107/webchat-robolingo |
-| LINE OA (เพิ่มเพื่อน) | `https://line.me/R/ti/p/@<basic-id>` (ดู Basic ID ได้ที่ LINE Developers → Messaging API) |
+| LINE OA (เพิ่มเพื่อน) | https://line.me/R/ti/p/@015xgnhm |
 | Webhook URL | `https://webchat-robolingo-sable.vercel.app/api/line/webhook` |
 | Hosting | Vercel (region `sin1`) |
 | Database | Neon Postgres (เชื่อมผ่าน Vercel Storage) |

@@ -4,7 +4,7 @@ A web inbox for a LINE Official Account. Messages that users send to the OA appe
 
 | | |
 |---|---|
-| LINE OA (add friend) | `https://line.me/R/ti/p/@<basic-id>` |
+| LINE OA (add friend) | https://line.me/R/ti/p/@015xgnhm |
 | Webchat | https://webchat-robolingo-sable.vercel.app |
 | Repository | https://github.com/matay107/webchat-robolingo |
 | Hand-off document (Thai, with flowcharts) | [docs/HAND-OFF.md](docs/HAND-OFF.md) |
