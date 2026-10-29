@@ -15,6 +15,13 @@
       "when": 1793291386025,
       "tag": "0001_sticker_id",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793292312938,
+      "tag": "0002_unread",
+      "breakpoints": true
     }
   ]
 }

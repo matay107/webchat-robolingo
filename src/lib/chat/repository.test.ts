@@ -34,6 +34,7 @@ describe("contacts", () => {
       isFollowing: true,
       profileSyncedAt: at(5),
       lastMessage: null,
+      unreadCount: 0,
     });
   });
 
@@ -88,6 +89,38 @@ describe("recordInbound", () => {
     await inbound(alice, "100", "older", at(1));
 
     await expect(repo.findContact(alice)).resolves.toMatchObject({ lastMessage: { text: "newer" } });
+  });
+});
+
+describe("unread messages", () => {
+  beforeEach(() => addContact(alice));
+  const key = "11111111-1111-4111-8111-111111111111";
+
+  it("counts inbound messages the admin has not read; replies do not count", async () => {
+    await inbound(alice, "1", "a", at(1));
+    await inbound(alice, "2", "b", at(2));
+    await repo.recordOutbound({ userId: alice, text: "reply", idempotencyKey: key, sentAt: at(3) });
+
+    await expect(repo.listContacts(10)).resolves.toMatchObject([{ unreadCount: 2 }]);
+  });
+
+  it("marks messages up to an id as read", async () => {
+    const first = await inbound(alice, "1", "a", at(1));
+    await inbound(alice, "2", "b", at(2));
+
+    await repo.markRead(alice, first!.id);
+
+    await expect(repo.findContact(alice)).resolves.toMatchObject({ unreadCount: 1 });
+  });
+
+  it("never moves the read marker backwards, e.g. a late request from another tab", async () => {
+    const first = await inbound(alice, "1", "a", at(1));
+    const second = await inbound(alice, "2", "b", at(2));
+
+    await repo.markRead(alice, second!.id);
+    await repo.markRead(alice, first!.id);
+
+    await expect(repo.findContact(alice)).resolves.toMatchObject({ unreadCount: 0 });
   });
 });
 

@@ -17,6 +17,7 @@ import {
   invalidRequest,
   isSameOrigin,
   json,
+  noContent,
   readJsonBody,
   tooManyRequests,
   unauthorized,
@@ -37,6 +38,7 @@ const sendBodySchema = z.strictObject({
     .refine((text) => text.trim().length > 0, "Message is empty"),
   idempotencyKey: z.uuid(),
 });
+const markReadBodySchema = z.strictObject({ upToId: z.number().int().positive().max(Number.MAX_SAFE_INTEGER) });
 
 /** Public contact shape: an explicit allow-list so internal columns never leak (OWASP API3:2023). */
 function toContactDto(contact: Contact) {
@@ -46,6 +48,7 @@ function toContactDto(contact: Contact) {
     pictureUrl: contact.pictureUrl,
     isFollowing: contact.isFollowing,
     lastMessage: contact.lastMessage && { ...contact.lastMessage, sentAt: contact.lastMessage.sentAt.toISOString() },
+    unreadCount: contact.unreadCount,
   };
 }
 
@@ -106,6 +109,23 @@ export function createConversationHandlers({ repo, service, limiter, sessionSecr
         return json({ messages: messages.map(toMessageDto) });
       } catch (error) {
         return internalError("messages.list_failed", error);
+      }
+    },
+
+    /** `POST /api/contacts/:userId/read` with `{ upToId }` */
+    async markRead(request: NextRequest, userId: string): Promise<Response> {
+      if (!isSameOrigin(request)) return forbiddenOrigin();
+      if (!(await hasValidSession(request, sessionSecret))) return unauthorized();
+      if (!lineUserIdSchema.safeParse(userId).success) return invalidRequest("Invalid user id");
+
+      try {
+        const body = markReadBodySchema.safeParse(await readJsonBody(request, 1024));
+        if (!body.success) return invalidRequest("upToId must be a positive integer");
+
+        await repo.markRead(userId, body.data.upToId);
+        return noContent();
+      } catch (error) {
+        return internalError("contacts.mark_read_failed", error);
       }
     },
 

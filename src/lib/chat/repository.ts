@@ -33,6 +33,8 @@ export interface ChatRepository {
   /** Creates the contact or refreshes its profile. */
   saveContactProfile(input: ContactProfileInput): Promise<void>;
   setFollowing(userId: string, isFollowing: boolean): Promise<void>;
+  /** Marks messages up to `upToId` as read; the marker never moves backwards. */
+  markRead(userId: string, upToId: number): Promise<void>;
   /** Resolves `null` when this LINE message was already stored (webhook redelivery). */
   recordInbound(input: InboundMessageInput): Promise<ChatMessage | null>;
   /** Idempotent per `idempotencyKey`: a retry resolves to the originally stored message. */
@@ -56,7 +58,17 @@ export class IdempotencyKeyConflictError extends Error {
 type ContactRow = typeof contacts.$inferSelect;
 type MessageRow = typeof messages.$inferSelect;
 
-function toContact(row: ContactRow): Contact {
+/** Correlated count; served by messages_user_id_id_idx. */
+const unreadCount = sql<number>`(
+  select count(*) from ${messages}
+  where ${messages.userId} = ${contacts.userId}
+    and ${messages.direction} = 'inbound'
+    and ${messages.id} > ${contacts.lastReadMessageId}
+)`.mapWith(Number);
+
+const contactWithUnread = { contact: contacts, unreadCount };
+
+function toContact({ contact: row, unreadCount }: { contact: ContactRow; unreadCount: number }): Contact {
   return {
     userId: row.userId,
     displayName: row.displayName,
@@ -67,6 +79,7 @@ function toContact(row: ContactRow): Contact {
       row.lastMessageAt && row.lastMessageType
         ? { type: row.lastMessageType, text: row.lastMessageText, sentAt: row.lastMessageAt }
         : null,
+    unreadCount,
   };
 }
 
@@ -102,7 +115,7 @@ export function createChatRepository(db: Database): ChatRepository {
 
   return {
     async findContact(userId) {
-      const [row] = await db.select().from(contacts).where(eq(contacts.userId, userId)).limit(1);
+      const [row] = await db.select(contactWithUnread).from(contacts).where(eq(contacts.userId, userId)).limit(1);
       return row ? toContact(row) : null;
     },
 
@@ -116,6 +129,13 @@ export function createChatRepository(db: Database): ChatRepository {
 
     async setFollowing(userId, isFollowing) {
       await db.update(contacts).set({ isFollowing }).where(eq(contacts.userId, userId));
+    },
+
+    async markRead(userId, upToId) {
+      await db
+        .update(contacts)
+        .set({ lastReadMessageId: sql`greatest(${contacts.lastReadMessageId}, ${upToId})` })
+        .where(eq(contacts.userId, userId));
     },
 
     async recordInbound(input) {
@@ -154,7 +174,7 @@ export function createChatRepository(db: Database): ChatRepository {
 
     async listContacts(limit) {
       const rows = await db
-        .select()
+        .select(contactWithUnread)
         .from(contacts)
         // Matches contacts_last_message_at_idx; Postgres puts NULLs first on DESC by default.
         .orderBy(sql`${contacts.lastMessageAt} desc nulls last`, asc(contacts.userId))

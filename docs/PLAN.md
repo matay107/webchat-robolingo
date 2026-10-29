@@ -71,7 +71,7 @@ Route handler บางเฉียบ: สร้างจาก factory ที�
 - [x] T7.1 (TDD) โหลดข้อความเก่า:
   - API: `GET /api/contacts/[userId]/messages?before=` (ใช้คู่กับ `after` ไม่ได้)
   - UI: ปุ่ม "Load earlier messages" ที่ต้องรักษาตำแหน่ง scroll เดิมไว้
-- [ ] T7.2 (TDD) ข้อความยังไม่อ่าน:
+- [x] T7.2 (TDD) ข้อความยังไม่อ่าน:
   - เพิ่มคอลัมน์ `contacts.last_read_message_id` และส่ง `unreadCount` (นับเฉพาะข้อความขาเข้า) ไปกับรายชื่อ
   - `POST /api/contacts/[userId]/read { upToId }`: ตรวจ Origin + session และค่าห้ามถอยหลัง
   - UI: ตัวเลขบนรายชื่อ, title ของแท็บเป็น `(N) ...` และ mark read เมื่อเปิดดูแชท

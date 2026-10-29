@@ -1,11 +1,12 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { ContactDto } from "@/server/handlers/conversations";
 import { inboxApi, UnauthorizedError } from "./api";
 import { ContactList } from "./ContactList";
 import { Conversation } from "./Conversation";
+import { inboxTitle } from "./messages";
 import { usePolling } from "./usePolling";
 
 const CONTACT_POLL_MS = 3000;
@@ -33,6 +34,10 @@ export function Inbox() {
       if (!signal.aborted) handleError(error);
     }
   }, CONTACT_POLL_MS);
+
+  useEffect(() => {
+    document.title = inboxTitle(contacts ?? [], selectedUserId);
+  }, [contacts, selectedUserId]);
 
   async function signOut() {
     await inboxApi.logout();

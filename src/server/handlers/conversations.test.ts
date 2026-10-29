@@ -68,6 +68,7 @@ describe("GET /api/contacts", () => {
           pictureUrl: "https://p/a.png",
           isFollowing: true,
           lastMessage: { type: "text", text: "<b>hi</b>", sentAt: at.toISOString() },
+          unreadCount: 1,
         },
       ],
     });
@@ -109,6 +110,42 @@ describe("GET /api/contacts/:userId/messages", () => {
     ["both after and before", alice, "?after=1&before=5"],
   ])("rejects %s with 400", async (_, userId, query) => {
     expect((await handlers.listMessages(get(`/api/contacts/${userId}/messages${query}`), userId)).status).toBe(400);
+  });
+});
+
+describe("POST /api/contacts/:userId/read", () => {
+  const markRead = (userId: string, body: unknown, options: { origin?: string | null; withSession?: boolean } = {}) =>
+    handlers.markRead(
+      makeRequest(`/api/contacts/${userId}/read`, {
+        method: "POST",
+        body: body as object,
+        origin: options.origin,
+        cookie: options.withSession === false ? undefined : cookie,
+      }),
+      userId,
+    );
+
+  it("marks the conversation read up to the given message", async () => {
+    const { messages } = await (await handlers.listMessages(get(`/api/contacts/${alice}/messages`), alice)).json();
+
+    expect((await markRead(alice, { upToId: messages[0].id })).status).toBe(204);
+    await expect(repo.findContact(alice)).resolves.toMatchObject({ unreadCount: 0 });
+  });
+
+  it("rejects a cross-site request with 403 (CSRF)", async () => {
+    expect((await markRead(alice, { upToId: 1 }, { origin: "https://evil.test" })).status).toBe(403);
+  });
+
+  it("rejects a request without a session with 401", async () => {
+    expect((await markRead(alice, { upToId: 1 }, { withSession: false })).status).toBe(401);
+  });
+
+  it.each([
+    ["a missing id", {}],
+    ["a negative id", { upToId: -1 }],
+    ["unexpected fields (mass assignment)", { upToId: 1, unreadCount: 0 }],
+  ])("rejects %s with 400", async (_, body) => {
+    expect((await markRead(alice, body)).status).toBe(400);
   });
 });
 

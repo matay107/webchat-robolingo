@@ -20,4 +20,6 @@ export interface Contact {
   isFollowing: boolean;
   profileSyncedAt: Date | null;
   lastMessage: { type: string; text: string | null; sentAt: Date } | null;
+  /** Inbound messages the admin has not read yet. */
+  unreadCount: number;
 }

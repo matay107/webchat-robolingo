@@ -15,6 +15,8 @@ export const contacts = pgTable("contacts", {
   lastMessageAt: timestamptz("last_message_at"),
   lastMessageType: text("last_message_type"),
   lastMessageText: text("last_message_text"),
+  /** Highest message id the admin has seen; inbound messages above it are unread. */
+  lastReadMessageId: bigint("last_read_message_id", { mode: "number" }).notNull().default(0),
   createdAt: timestamptz("created_at").notNull().defaultNow(),
 }, (t) => [index("contacts_last_message_at_idx").on(t.lastMessageAt.desc().nullsLast(), t.userId)]);
 

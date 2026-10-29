@@ -44,6 +44,17 @@ describe("inboxApi", () => {
     );
   });
 
+  it("marks a conversation read up to a message", async () => {
+    fetchMock.mockResolvedValue(new Response(null, { status: 204 }));
+
+    await inboxApi.markRead(userId, 9);
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      `/api/contacts/${userId}/read`,
+      expect.objectContaining({ method: "POST", body: JSON.stringify({ upToId: 9 }) }),
+    );
+  });
+
   it("signals an expired session with UnauthorizedError", async () => {
     fetchMock.mockResolvedValue(jsonResponse({ error: { code: "unauthorized", message: "Sign in required" } }, 401));
 

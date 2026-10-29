@@ -37,9 +37,16 @@ export function Conversation({ contact, onBack, onError }: ConversationProps) {
       const incoming = await inboxApi.listMessages(contact.userId, { after: cursor.current }, signal);
       // A full first page means there may be more history before it.
       if (firstLoad) setHasOlder(incoming.length === MESSAGE_PAGE_SIZE);
-      if (incoming.length > 0) cursor.current = incoming[incoming.length - 1].id;
+      const latestId = incoming.at(-1)?.id;
+      if (latestId !== undefined) cursor.current = latestId;
       setMessages((current) => mergeMessages(current, incoming));
       setLoaded(true);
+      // The admin is looking at this conversation, so what just arrived is read.
+      if (latestId !== undefined && incoming.some((message) => message.direction === "inbound")) {
+        inboxApi.markRead(contact.userId, latestId).catch((error: unknown) => {
+          if (error instanceof UnauthorizedError) onError(error);
+        });
+      }
     } catch (error) {
       if (!signal.aborted) onError(error);
     }

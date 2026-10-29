@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { MessageDto } from "@/server/handlers/conversations";
-import { describeMessage, mergeMessages, stickerImageUrl } from "./messages";
+import type { ContactDto } from "@/server/handlers/conversations";
+import { describeMessage, inboxTitle, mergeMessages, stickerImageUrl } from "./messages";
 
 const msg = (id: number, text = `m${id}`): MessageDto => ({
   id,
@@ -32,6 +33,18 @@ describe("describeMessage", () => {
 describe("stickerImageUrl", () => {
   it("points at LINE's sticker CDN", () => {
     expect(stickerImageUrl("52002734")).toBe("https://stickershop.line-scdn.net/stickershop/v1/sticker/52002734/android/sticker.png");
+  });
+});
+
+describe("inboxTitle", () => {
+  const contact = (userId: string, unreadCount: number) => ({ userId, unreadCount }) as ContactDto;
+
+  it("shows the unread total in the tab title, leaving out the open conversation", () => {
+    expect(inboxTitle([contact("a", 2), contact("b", 3), contact("c", 5)], "c")).toBe("(5) LINE OA Webchat");
+  });
+
+  it("shows the plain title when everything is read", () => {
+    expect(inboxTitle([contact("a", 0)], null)).toBe("LINE OA Webchat");
   });
 });
 

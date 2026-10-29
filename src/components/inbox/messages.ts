@@ -1,4 +1,6 @@
-import type { MessageDto } from "@/server/handlers/conversations";
+import type { ContactDto, MessageDto } from "@/server/handlers/conversations";
+
+export const APP_TITLE = "LINE OA Webchat";
 
 const NON_TEXT_LABELS: Record<string, string> = {
   sticker: "Sticker",
@@ -13,6 +15,12 @@ const NON_TEXT_LABELS: Record<string, string> = {
 export function describeMessage(type: string, text: string | null): string {
   if (type === "text") return text ?? "";
   return NON_TEXT_LABELS[type] ?? `Unsupported message (${type})`;
+}
+
+/** Tab title with the unread total, so new messages show while the admin is in another tab. */
+export function inboxTitle(contacts: ContactDto[], selectedUserId: string | null): string {
+  const unread = contacts.reduce((total, contact) => total + (contact.userId === selectedUserId ? 0 : contact.unreadCount), 0);
+  return unread > 0 ? `(${unread}) ${APP_TITLE}` : APP_TITLE;
 }
 
 /** LINE's public sticker image. Not an official API, so callers must handle a failed load. */

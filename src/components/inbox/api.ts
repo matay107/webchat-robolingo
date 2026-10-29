@@ -48,6 +48,11 @@ export const inboxApi = {
     return (await request<{ message: MessageDto }>(messagesUrl(userId), init)).message;
   },
 
+  async markRead(userId: string, upToId: number): Promise<void> {
+    const init = { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ upToId }) };
+    await request<null>(`/api/contacts/${encodeURIComponent(userId)}/read`, init);
+  },
+
   async logout(): Promise<void> {
     await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" });
   },

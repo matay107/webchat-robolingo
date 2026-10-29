@@ -11,6 +11,7 @@ const contact = (n: string, overrides: Partial<ContactDto> = {}): ContactDto => 
   pictureUrl: null,
   isFollowing: true,
   lastMessage: { type: "text", text: `hello from ${n}`, sentAt: "2026-01-01T10:00:00.000Z" },
+  unreadCount: 0,
   ...overrides,
 });
 
@@ -20,6 +21,14 @@ describe("ContactList", () => {
 
     expect(screen.getByRole("button", { name: /User a/ })).toHaveTextContent("hello from a");
     expect(screen.getByRole("button", { name: /User b/ })).toHaveTextContent("hello from b");
+  });
+
+  it("shows how many messages are unread, except in the open conversation", () => {
+    const contacts = [contact("a", { unreadCount: 3 }), contact("b", { unreadCount: 2 })];
+    render(<ContactList contacts={contacts} selectedUserId={contacts[1].userId} onSelect={() => {}} />);
+
+    expect(screen.getByLabelText("3 unread")).toBeInTheDocument();
+    expect(screen.queryByLabelText("2 unread")).not.toBeInTheDocument();
   });
 
   it("selects a user on click and marks the selected one", async () => {

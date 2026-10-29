@@ -22,6 +22,7 @@ export function ContactList({ contacts, selectedUserId, onSelect }: ContactListP
     <ul className="flex flex-col gap-1 p-2">
       {contacts.map((contact) => {
         const selected = contact.userId === selectedUserId;
+        const unread = selected ? 0 : contact.unreadCount;
         return (
           <li key={contact.userId}>
             <button
@@ -44,6 +45,14 @@ export function ContactList({ contacts, selectedUserId, onSelect }: ContactListP
                   <span className="truncate text-sm font-light text-muted">
                     {contact.lastMessage ? describeMessage(contact.lastMessage.type, contact.lastMessage.text) : " "}
                   </span>
+                  {unread > 0 && (
+                    <span
+                      aria-label={`${unread} unread`}
+                      className="ml-auto shrink-0 rounded-full bg-brand-gradient px-2 text-xs font-medium leading-5 text-white"
+                    >
+                      {unread > 99 ? "99+" : unread}
+                    </span>
+                  )}
                   {!contact.isFollowing && (
                     <span className="shrink-0 rounded-bubble bg-zinc-100 px-2 text-xs text-muted">Unfollowed</span>
                   )}
