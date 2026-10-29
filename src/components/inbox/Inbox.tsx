@@ -42,12 +42,19 @@ export function Inbox() {
   const selected = contacts?.find((contact) => contact.userId === selectedUserId) ?? null;
 
   return (
-    <div className="flex h-dvh flex-col bg-white">
-      <header className="flex items-center justify-between bg-[#06C755] px-4 py-2.5 text-white">
-        <h1 className="font-semibold">LINE OA Webchat</h1>
-        <button type="button" onClick={signOut} className="rounded-md px-2 py-1 text-sm hover:bg-white/15">
+    <div className="flex h-dvh flex-col bg-canvas">
+      <header className="relative flex items-center justify-between bg-white px-4 py-3 shadow-sm">
+        <h1 className="text-lg font-semibold">
+          <span className="text-brand-gradient">LINE OA</span> Webchat
+        </h1>
+        <button
+          type="button"
+          onClick={signOut}
+          className="rounded-bubble border border-brand/30 px-4 py-1.5 text-sm text-brand transition hover:bg-brand-soft"
+        >
           Sign out
         </button>
+        <span aria-hidden className="absolute inset-x-0 bottom-0 h-0.5 bg-brand-gradient" />
       </header>
 
       {connectionError && (
@@ -59,10 +66,10 @@ export function Inbox() {
       <div className="flex min-h-0 flex-1">
         <nav
           aria-label="Conversations"
-          className={`${selected ? "hidden md:block" : "block"} w-full shrink-0 overflow-y-auto border-r border-zinc-200 md:w-80`}
+          className={`${selected ? "hidden md:block" : "block"} w-full shrink-0 overflow-y-auto border-r border-zinc-100 bg-white md:w-80`}
         >
           {contacts === null ? (
-            <p className="p-6 text-center text-sm text-zinc-500">Loading…</p>
+            <p className="p-6 text-center text-sm text-muted">Loading…</p>
           ) : (
             <ContactList contacts={contacts} selectedUserId={selectedUserId} onSelect={setSelectedUserId} />
           )}
@@ -72,7 +79,12 @@ export function Inbox() {
           {selected ? (
             <Conversation key={selected.userId} contact={selected} onBack={() => setSelectedUserId(null)} onError={handleError} />
           ) : (
-            <p className="m-auto text-sm text-zinc-500">Select a conversation to reply.</p>
+            <div className="m-auto flex flex-col items-center gap-3 text-center">
+              <span aria-hidden className="flex size-16 items-center justify-center rounded-bubble bg-brand-gradient text-2xl text-white shadow-lg shadow-brand/25">
+                ✉
+              </span>
+              <p className="text-sm text-muted">Select a conversation to reply.</p>
+            </div>
           )}
         </main>
       </div>

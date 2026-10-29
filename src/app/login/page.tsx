@@ -8,10 +8,17 @@ export default async function LoginPage() {
   // Render per request so the proxy's CSP nonce is applied to the page's scripts.
   await connection();
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-zinc-50 px-4">
-      <div className="w-full max-w-sm rounded-2xl bg-white p-8 shadow-sm ring-1 ring-zinc-200">
-        <h1 className="text-xl font-semibold text-zinc-900">LINE OA Webchat</h1>
-        <p className="mb-6 mt-1 text-sm text-zinc-500">Sign in to read and reply to messages.</p>
+    <main className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-brand-wash px-4">
+      {/* Decorative gradient blobs. */}
+      <div aria-hidden className="pointer-events-none absolute -left-24 -top-24 size-80 rounded-full bg-brand-gradient opacity-20 blur-3xl" />
+      <div aria-hidden className="pointer-events-none absolute -bottom-32 -right-16 size-96 rounded-full bg-brand opacity-15 blur-3xl" />
+
+      <div className="relative w-full max-w-sm rounded-3xl bg-white/90 p-8 shadow-xl shadow-brand/10 ring-1 ring-brand-soft backdrop-blur">
+        <span className="inline-flex rounded-bubble bg-brand-soft px-3 py-1 text-xs font-medium text-brand">Admin console</span>
+        <h1 className="mt-4 text-2xl font-semibold">
+          <span className="text-brand-gradient">LINE OA</span> Webchat
+        </h1>
+        <p className="mb-6 mt-1 text-sm font-light text-muted">Sign in to read and reply to messages.</p>
         <LoginForm />
       </div>
     </main>

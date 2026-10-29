@@ -56,21 +56,21 @@ export function Conversation({ contact, onBack, onError }: ConversationProps) {
 
   return (
     <>
-      <header className="flex items-center gap-3 border-b border-zinc-200 bg-white px-4 py-3">
-        <button type="button" onClick={onBack} className="-ml-1 rounded p-1 text-zinc-500 hover:bg-zinc-100 md:hidden" aria-label="Back to conversations">
+      <header className="flex items-center gap-3 border-b border-zinc-100 bg-white px-4 py-3">
+        <button type="button" onClick={onBack} className="-ml-1 rounded-full p-1.5 text-brand hover:bg-brand-soft md:hidden" aria-label="Back to conversations">
           ←
         </button>
         <Avatar name={contact.displayName} pictureUrl={contact.pictureUrl} size={36} />
         <div className="min-w-0">
-          <h2 className="truncate font-semibold text-zinc-900">{contact.displayName}</h2>
-          {!contact.isFollowing && <p className="text-xs text-zinc-500">Unfollowed or blocked the OA</p>}
+          <h2 className="truncate font-medium text-ink">{contact.displayName}</h2>
+          {!contact.isFollowing && <p className="text-xs font-light text-muted">Unfollowed or blocked the OA</p>}
         </div>
       </header>
 
-      {loaded ? <MessageThread messages={messages} /> : <p className="flex-1 p-6 text-center text-sm text-zinc-500">Loading…</p>}
+      {loaded ? <MessageThread messages={messages} /> : <p className="flex-1 bg-canvas p-6 text-center text-sm text-muted">Loading…</p>}
 
       {sendError && (
-        <p role="alert" className="border-t border-red-100 bg-red-50 px-4 py-2 text-sm text-red-700">
+        <p role="alert" className="border-t border-brand/10 bg-brand-soft px-4 py-2 text-sm text-brand-dark">
           {sendError}
         </p>
       )}

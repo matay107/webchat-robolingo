@@ -9,7 +9,7 @@ export function Avatar({ name, pictureUrl, size = 40 }: { name: string; pictureU
     <span
       aria-hidden
       style={{ width: size, height: size }}
-      className="flex shrink-0 items-center justify-center rounded-full bg-emerald-100 font-semibold text-emerald-700"
+      className="flex shrink-0 items-center justify-center rounded-full bg-brand-gradient font-medium text-white"
     >
       {name.trim().charAt(0).toUpperCase() || "?"}
     </span>

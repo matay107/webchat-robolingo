@@ -12,14 +12,14 @@ interface ContactListProps {
 export function ContactList({ contacts, selectedUserId, onSelect }: ContactListProps) {
   if (contacts.length === 0) {
     return (
-      <p className="p-6 text-center text-sm text-zinc-500">
+      <p className="p-6 text-center text-sm font-light text-muted">
         No conversations yet. Messages sent to the LINE OA will appear here.
       </p>
     );
   }
 
   return (
-    <ul className="divide-y divide-zinc-100">
+    <ul className="flex flex-col gap-1 p-2">
       {contacts.map((contact) => {
         const selected = contact.userId === selectedUserId;
         return (
@@ -28,24 +28,24 @@ export function ContactList({ contacts, selectedUserId, onSelect }: ContactListP
               type="button"
               onClick={() => onSelect(contact.userId)}
               aria-current={selected ? "true" : undefined}
-              className={`flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-zinc-50 ${selected ? "bg-emerald-50 hover:bg-emerald-50" : ""}`}
+              className={`flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left transition-colors ${selected ? "bg-brand-soft" : "hover:bg-canvas"}`}
             >
               <Avatar name={contact.displayName} pictureUrl={contact.pictureUrl} />
               <span className="min-w-0 flex-1">
                 <span className="flex items-baseline justify-between gap-2">
-                  <span className="truncate font-medium text-zinc-900">{contact.displayName}</span>
+                  <span className={`truncate font-medium ${selected ? "text-brand-dark" : "text-ink"}`}>{contact.displayName}</span>
                   {contact.lastMessage && (
-                    <time dateTime={contact.lastMessage.sentAt} className="shrink-0 text-xs text-zinc-400">
+                    <time dateTime={contact.lastMessage.sentAt} className="shrink-0 text-xs font-light text-muted">
                       {formatTimestamp(contact.lastMessage.sentAt)}
                     </time>
                   )}
                 </span>
                 <span className="flex items-center gap-2">
-                  <span className="truncate text-sm text-zinc-500">
+                  <span className="truncate text-sm font-light text-muted">
                     {contact.lastMessage ? describeMessage(contact.lastMessage.type, contact.lastMessage.text) : " "}
                   </span>
                   {!contact.isFollowing && (
-                    <span className="shrink-0 rounded bg-zinc-100 px-1.5 text-xs text-zinc-500">Unfollowed</span>
+                    <span className="shrink-0 rounded-bubble bg-zinc-100 px-2 text-xs text-muted">Unfollowed</span>
                   )}
                 </span>
               </span>
