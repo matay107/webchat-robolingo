@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { MessageDto } from "@/server/handlers/conversations";
 import { MessageThread } from "./MessageThread";
 
@@ -47,6 +47,17 @@ describe("MessageThread", () => {
 
     expect(screen.queryByRole("img")).not.toBeInTheDocument();
     expect(screen.getByText("Sticker")).toBeInTheDocument();
+  });
+
+  it("offers to load earlier messages only when there are more", () => {
+    const { rerender } = render(<MessageThread messages={[message(1)]} />);
+    expect(screen.queryByRole("button", { name: /earlier messages/ })).not.toBeInTheDocument();
+
+    const onLoadOlder = vi.fn();
+    rerender(<MessageThread messages={[message(1)]} onLoadOlder={onLoadOlder} />);
+    fireEvent.click(screen.getByRole("button", { name: /earlier messages/ }));
+
+    expect(onLoadOlder).toHaveBeenCalledOnce();
   });
 
   it("shows an empty state for a conversation without messages", () => {

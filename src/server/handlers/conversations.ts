@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { z } from "zod";
-import { MAX_TEXT_LENGTH } from "@/lib/chat/limits";
+import { MAX_TEXT_LENGTH, MESSAGE_PAGE_SIZE } from "@/lib/chat/limits";
 import { IdempotencyKeyConflictError, type ChatRepository } from "@/lib/chat/repository";
 import { ContactNotFoundError, type ChatService } from "@/lib/chat/service";
 import type { ChatMessage, Contact } from "@/lib/chat/types";
@@ -25,8 +25,11 @@ import {
 /** Caps outbound pushes, which consume the OA's monthly message quota (OWASP API6:2023). */
 export const SEND_RATE_LIMIT = { limit: 20, windowMs: 60 * 1000 };
 
-const limitSchema = z.coerce.number().int().min(1).max(100).default(50);
-const listMessagesQuerySchema = z.object({ after: z.coerce.number().int().min(0).optional(), limit: limitSchema });
+const limitSchema = z.coerce.number().int().min(1).max(100).default(MESSAGE_PAGE_SIZE);
+const cursorSchema = z.coerce.number().int().min(0).optional();
+const listMessagesQuerySchema = z
+  .object({ after: cursorSchema, before: cursorSchema, limit: limitSchema })
+  .refine((query) => query.after === undefined || query.before === undefined, "Use either after or before");
 const sendBodySchema = z.strictObject({
   text: z
     .string()
@@ -86,15 +89,20 @@ export function createConversationHandlers({ repo, service, limiter, sessionSecr
       }
     },
 
-    /** `GET /api/contacts/:userId/messages?after=&limit=` */
+    /** `GET /api/contacts/:userId/messages?after=|before=&limit=` */
     async listMessages(request: NextRequest, userId: string): Promise<Response> {
       if (!(await hasValidSession(request, sessionSecret))) return unauthorized();
       if (!lineUserIdSchema.safeParse(userId).success) return invalidRequest("Invalid user id");
-      const query = listMessagesQuerySchema.safeParse({ after: queryParam(request, "after"), limit: queryParam(request, "limit") });
+      const query = listMessagesQuerySchema.safeParse({
+        after: queryParam(request, "after"),
+        before: queryParam(request, "before"),
+        limit: queryParam(request, "limit"),
+      });
       if (!query.success) return invalidRequest("Invalid query parameters");
 
       try {
-        const messages = await repo.listMessages(userId, { afterId: query.data.after, limit: query.data.limit });
+        const { after, before, limit } = query.data;
+        const messages = await repo.listMessages(userId, { afterId: after, beforeId: before, limit });
         return json({ messages: messages.map(toMessageDto) });
       } catch (error) {
         return internalError("messages.list_failed", error);

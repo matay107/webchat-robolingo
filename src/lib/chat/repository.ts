@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gt, isNull, lte, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, isNull, lt, lte, or, sql } from "drizzle-orm";
 import type { Database } from "@/lib/db/client";
 import { contacts, messages } from "@/lib/db/schema";
 import type { ChatMessage, Contact } from "./types";
@@ -39,8 +39,11 @@ export interface ChatRepository {
   recordOutbound(input: OutboundMessageInput): Promise<ChatMessage>;
   /** Contacts ordered by latest message; contacts without messages come last. */
   listContacts(limit: number): Promise<Contact[]>;
-  /** Messages in chronological order: the latest `limit`, or those after `afterId` when polling. */
-  listMessages(userId: string, options: { afterId?: number; limit: number }): Promise<ChatMessage[]>;
+  /**
+   * Messages in chronological order: those after `afterId` when polling, otherwise the latest
+   * `limit`, or the latest `limit` before `beforeId` when paging back through history.
+   */
+  listMessages(userId: string, options: { afterId?: number; beforeId?: number; limit: number }): Promise<ChatMessage[]>;
 }
 
 export class IdempotencyKeyConflictError extends Error {
@@ -159,7 +162,7 @@ export function createChatRepository(db: Database): ChatRepository {
       return rows.map(toContact);
     },
 
-    async listMessages(userId, { afterId, limit }) {
+    async listMessages(userId, { afterId, beforeId, limit }) {
       if (afterId !== undefined) {
         const rows = await db
           .select()
@@ -173,7 +176,7 @@ export function createChatRepository(db: Database): ChatRepository {
       const rows = await db
         .select()
         .from(messages)
-        .where(eq(messages.userId, userId))
+        .where(and(eq(messages.userId, userId), beforeId === undefined ? undefined : lt(messages.id, beforeId)))
         .orderBy(desc(messages.id))
         .limit(limit);
       return rows.reverse().map(toMessage);

@@ -131,4 +131,11 @@ describe("listMessages", () => {
 
     expect(newer.map((m) => m.text)).toEqual(["m3", "m4", "m5"]);
   });
+
+  it("returns the page just before a cursor when loading older history", async () => {
+    const [, , , fourth] = await repo.listMessages(alice, { limit: 10 });
+    const older = await repo.listMessages(alice, { beforeId: fourth.id, limit: 2 });
+
+    expect(older.map((m) => m.text)).toEqual(["m2", "m3"]);
+  });
 });

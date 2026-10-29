@@ -94,7 +94,20 @@ describe("GET /api/contacts/:userId/messages", () => {
     await expect(response.json()).resolves.toEqual({ messages: [] });
   });
 
-  it.each([["an invalid user id", "U123", ""], ["a negative cursor", alice, "?after=-1"]])("rejects %s with 400", async (_, userId, query) => {
+  it("returns older messages when paging back with ?before=", async () => {
+    await repo.recordInbound({ userId: alice, lineMessageId: "2", messageType: "text", text: "second", stickerId: null, sentAt: at });
+    const { messages } = await (await handlers.listMessages(get(`/api/contacts/${alice}/messages`), alice)).json();
+    const response = await handlers.listMessages(get(`/api/contacts/${alice}/messages?before=${messages[1].id}`), alice);
+
+    await expect(response.json()).resolves.toMatchObject({ messages: [{ text: "<b>hi</b>" }] });
+  });
+
+  it.each([
+    ["an invalid user id", "U123", ""],
+    ["a negative cursor", alice, "?after=-1"],
+    ["a negative before cursor", alice, "?before=-1"],
+    ["both after and before", alice, "?after=1&before=5"],
+  ])("rejects %s with 400", async (_, userId, query) => {
     expect((await handlers.listMessages(get(`/api/contacts/${userId}/messages${query}`), userId)).status).toBe(400);
   });
 });

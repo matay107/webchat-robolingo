@@ -21,9 +21,17 @@ describe("inboxApi", () => {
   it("polls messages after a cursor", async () => {
     fetchMock.mockResolvedValue(jsonResponse({ messages: [] }));
 
-    await inboxApi.listMessages(userId, 42);
+    await inboxApi.listMessages(userId, { after: 42 });
 
     expect(fetchMock).toHaveBeenCalledWith(`/api/contacts/${userId}/messages?after=42`, expect.anything());
+  });
+
+  it("pages back through older messages before a cursor", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ messages: [] }));
+
+    await inboxApi.listMessages(userId, { before: 7 });
+
+    expect(fetchMock).toHaveBeenCalledWith(`/api/contacts/${userId}/messages?before=7`, expect.anything());
   });
 
   it("posts a reply as JSON with its idempotency key", async () => {

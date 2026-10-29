@@ -35,9 +35,10 @@ export const inboxApi = {
     return (await request<{ contacts: ContactDto[] }>("/api/contacts", { signal })).contacts;
   },
 
-  /** Latest messages, or only those after `afterId` when polling. */
-  async listMessages(userId: string, afterId?: number, signal?: AbortSignal): Promise<MessageDto[]> {
-    const query = afterId === undefined ? "" : `?after=${afterId}`;
+  /** Latest messages; only those after `after` when polling; the page before `before` when loading history. */
+  async listMessages(userId: string, cursor: { after?: number; before?: number } = {}, signal?: AbortSignal): Promise<MessageDto[]> {
+    const query =
+      cursor.after !== undefined ? `?after=${cursor.after}` : cursor.before !== undefined ? `?before=${cursor.before}` : "";
     return (await request<{ messages: MessageDto[] }>(`${messagesUrl(userId)}${query}`, { signal })).messages;
   },
 

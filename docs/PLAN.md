@@ -66,6 +66,20 @@ Route handler บางเฉียบ: สร้างจาก factory ที�
 - [x] T6.2 README: architecture, setup, env, deploy, วิธีทดสอบ
 - [ ] T6.3 Deploy: GitHub public repo → Vercel → ตั้ง webhook → ทดสอบ end-to-end (ต้องใช้บัญชีของผู้ใช้)
 
+## Phase 7: Inbox polish
+- [x] T7.0 (TDD) แสดงสติกเกอร์เป็นรูป: เก็บ `sticker_id` (ตัวเลขเท่านั้น) แล้วแสดงจาก CDN ของ LINE ถ้าโหลดไม่ได้ให้กลับไปแสดงข้อความ "Sticker"
+- [x] T7.1 (TDD) โหลดข้อความเก่า:
+  - API: `GET /api/contacts/[userId]/messages?before=` (ใช้คู่กับ `after` ไม่ได้)
+  - UI: ปุ่ม "Load earlier messages" ที่ต้องรักษาตำแหน่ง scroll เดิมไว้
+- [ ] T7.2 (TDD) ข้อความยังไม่อ่าน:
+  - เพิ่มคอลัมน์ `contacts.last_read_message_id` และส่ง `unreadCount` (นับเฉพาะข้อความขาเข้า) ไปกับรายชื่อ
+  - `POST /api/contacts/[userId]/read { upToId }`: ตรวจ Origin + session และค่าห้ามถอยหลัง
+  - UI: ตัวเลขบนรายชื่อ, title ของแท็บเป็น `(N) ...` และ mark read เมื่อเปิดดูแชท
+- [ ] T7.3 (TDD) แสดงรูปที่ผู้ใช้ส่งมา:
+  - `GET /api/contacts/[userId]/messages/[id]/image[?size=full]`: ดึงผ่าน LINE Content API ฝั่ง server เพื่อไม่ให้ token ไปถึง browser
+  - ตรวจว่าข้อความเป็นของ user นั้นจริง (กัน BOLA, API1:2023) และยอมรับเฉพาะ raster image content-type
+  - UI: แสดง preview ในแชท กดแล้วเปิดรูปเต็มในแท็บใหม่ ถ้าโหลดไม่ได้ (เช่นไฟล์หมดอายุ) ให้กลับไปแสดงข้อความ "Photo"
+
 ## Definition of Done (ทุกเฟส)
 - Test ถูกเขียนก่อนและเห็นสถานะแดงก่อน implement
 - `pnpm lint && pnpm typecheck && pnpm test` ผ่าน

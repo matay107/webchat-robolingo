@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { MessageDto } from "@/server/handlers/conversations";
 import { describeMessage, formatTimestamp, stickerImageUrl } from "./messages";
 
@@ -21,11 +21,31 @@ function Sticker({ stickerId, onFail }: { stickerId: string; onFail: () => void 
   );
 }
 
+interface MessageThreadProps {
+  messages: MessageDto[];
+  /** Set while older history exists; shows a "load earlier" button at the top. */
+  onLoadOlder?: () => void;
+  loadingOlder?: boolean;
+}
+
 /** Chat bubbles for one conversation; keeps the newest message in view. */
-export function MessageThread({ messages }: { messages: MessageDto[] }) {
+export function MessageThread({ messages, onLoadOlder, loadingOlder = false }: MessageThreadProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const firstId = messages[0]?.id;
   const lastId = messages.at(-1)?.id;
+  const previous = useRef<{ firstId?: number; scrollHeight: number }>({ scrollHeight: 0 });
   const [failedStickers, setFailedStickers] = useState<ReadonlySet<number>>(() => new Set());
+
+  // Prepending older history must not move what the admin is reading: shift by the added height.
+  useLayoutEffect(() => {
+    const element = scrollRef.current;
+    if (!element) return;
+    const before = previous.current;
+    if (before.firstId !== undefined && firstId !== undefined && firstId < before.firstId) {
+      element.scrollTop += element.scrollHeight - before.scrollHeight;
+    }
+    previous.current = { firstId, scrollHeight: element.scrollHeight };
+  });
 
   useEffect(() => {
     const element = scrollRef.current;
@@ -34,6 +54,18 @@ export function MessageThread({ messages }: { messages: MessageDto[] }) {
 
   return (
     <div ref={scrollRef} className="flex-1 overflow-y-auto bg-canvas px-4 py-6">
+      {onLoadOlder && (
+        <div className="mb-4 flex justify-center">
+          <button
+            type="button"
+            onClick={onLoadOlder}
+            disabled={loadingOlder}
+            className="rounded-bubble border border-brand/30 bg-white px-4 py-1.5 text-sm text-brand transition hover:bg-brand-soft disabled:opacity-60"
+          >
+            {loadingOlder ? "Loading…" : "Load earlier messages"}
+          </button>
+        </div>
+      )}
       {messages.length === 0 ? (
         <p className="text-center text-sm font-light text-muted">No messages yet.</p>
       ) : (

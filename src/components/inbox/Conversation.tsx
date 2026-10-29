@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { MESSAGE_PAGE_SIZE } from "@/lib/chat/limits";
 import type { ContactDto, MessageDto } from "@/server/handlers/conversations";
 import { ApiError, inboxApi, UnauthorizedError } from "./api";
 import { Avatar } from "./Avatar";
@@ -23,6 +24,8 @@ export function Conversation({ contact, onBack, onError }: ConversationProps) {
   const [messages, setMessages] = useState<MessageDto[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
+  const [hasOlder, setHasOlder] = useState(false);
+  const [loadingOlder, setLoadingOlder] = useState(false);
   /** Highest message id seen by polling; sent messages do not move it, so nothing in between is skipped. */
   const cursor = useRef<number | undefined>(undefined);
   /** Retrying the same text reuses its idempotency key, so a send that timed out is not delivered twice. */
@@ -30,7 +33,10 @@ export function Conversation({ contact, onBack, onError }: ConversationProps) {
 
   usePolling(async (signal) => {
     try {
-      const incoming = await inboxApi.listMessages(contact.userId, cursor.current, signal);
+      const firstLoad = cursor.current === undefined;
+      const incoming = await inboxApi.listMessages(contact.userId, { after: cursor.current }, signal);
+      // A full first page means there may be more history before it.
+      if (firstLoad) setHasOlder(incoming.length === MESSAGE_PAGE_SIZE);
       if (incoming.length > 0) cursor.current = incoming[incoming.length - 1].id;
       setMessages((current) => mergeMessages(current, incoming));
       setLoaded(true);
@@ -38,6 +44,21 @@ export function Conversation({ contact, onBack, onError }: ConversationProps) {
       if (!signal.aborted) onError(error);
     }
   }, MESSAGE_POLL_MS);
+
+  async function loadOlder() {
+    const oldest = messages[0];
+    if (!oldest || loadingOlder) return;
+    setLoadingOlder(true);
+    try {
+      const older = await inboxApi.listMessages(contact.userId, { before: oldest.id });
+      setHasOlder(older.length === MESSAGE_PAGE_SIZE);
+      setMessages((current) => mergeMessages(current, older));
+    } catch (error) {
+      onError(error);
+    } finally {
+      setLoadingOlder(false);
+    }
+  }
 
   async function send(text: string): Promise<boolean> {
     if (pendingSend.current?.text !== text) pendingSend.current = { text, key: crypto.randomUUID() };
@@ -67,7 +88,11 @@ export function Conversation({ contact, onBack, onError }: ConversationProps) {
         </div>
       </header>
 
-      {loaded ? <MessageThread messages={messages} /> : <p className="flex-1 bg-canvas p-6 text-center text-sm text-muted">Loading…</p>}
+      {loaded ? (
+        <MessageThread messages={messages} onLoadOlder={hasOlder ? loadOlder : undefined} loadingOlder={loadingOlder} />
+      ) : (
+        <p className="flex-1 bg-canvas p-6 text-center text-sm text-muted">Loading…</p>
+      )}
 
       {sendError && (
         <p role="alert" className="border-t border-brand/10 bg-brand-soft px-4 py-2 text-sm text-brand-dark">
