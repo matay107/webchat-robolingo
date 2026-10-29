@@ -125,6 +125,17 @@ describe("unread messages", () => {
     await expect(repo.listContacts(10)).resolves.toMatchObject([{ unreadCount: 2 }]);
   });
 
+  it("counts each contact's unread messages separately", async () => {
+    await addContact(bob, "Bob");
+    await inbound(alice, "1", "a", at(1));
+    await inbound(bob, "2", "b", at(2));
+    await inbound(bob, "3", "c", at(3));
+
+    const counts = Object.fromEntries((await repo.listContacts(10)).map((c) => [c.displayName, c.unreadCount]));
+    expect(counts).toEqual({ Alice: 1, Bob: 2 });
+    await expect(repo.findContact(alice)).resolves.toMatchObject({ unreadCount: 1 });
+  });
+
   it("marks messages up to an id as read", async () => {
     const first = await inbound(alice, "1", "a", at(1));
     await inbound(alice, "2", "b", at(2));

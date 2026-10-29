@@ -60,12 +60,15 @@ export class IdempotencyKeyConflictError extends Error {
 type ContactRow = typeof contacts.$inferSelect;
 type MessageRow = typeof messages.$inferSelect;
 
-/** Correlated count; served by messages_user_id_id_idx. */
+/**
+ * Correlated count; served by messages_user_id_id_idx. Written as raw SQL because Drizzle leaves
+ * column names unqualified, which would make `user_id = user_id` compare messages with itself.
+ */
 const unreadCount = sql<number>`(
-  select count(*) from ${messages}
-  where ${messages.userId} = ${contacts.userId}
-    and ${messages.direction} = 'inbound'
-    and ${messages.id} > ${contacts.lastReadMessageId}
+  select count(*) from "messages" as m
+  where m."user_id" = "contacts"."user_id"
+    and m."direction" = 'inbound'
+    and m."id" > "contacts"."last_read_message_id"
 )`.mapWith(Number);
 
 const contactWithUnread = { contact: contacts, unreadCount };
